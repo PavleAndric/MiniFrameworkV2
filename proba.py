@@ -33,7 +33,7 @@ t_grad= first_grad * 1
 k_grad = first_grad * 1
 
 
-
+print(f"asdasdaa {second_grad}")
 print(t_grad)
 print(k_grad)
 print(o_grad)
