@@ -1,6 +1,6 @@
 import numpy as np
-import math
- 
+from typing import Tuple
+
 class Tensor():
 
     def __init__(self, data, _children = ()):
@@ -14,24 +14,23 @@ class Tensor():
     def __repr__(self):
         return f"<Tensor data = {self.data}>"
     
-    def shape(self): return self.shape
+    def shape(self)-> Tuple[int]: return self.shape
 
-    def size(self): return self.data.size
+    def size(self)->Tuple[int]: return self.data.size
+
     #-                                            BINARY                                                 -
-    def __add__(self, other): 
-        
+    def __add__(self, other )-> 'Tensor': 
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T  = Tensor(self.data + other.data, (self,other))
 
         def _backward():
-            self.grad += output_T.grad   # chain rule 
+            self.grad += output_T.grad 
             other.grad += output_T.grad
 
         output_T._backward = _backward
         return output_T
 
-    def __mul__(self, other): 
-
+    def __mul__(self, other)-> 'Tensor': 
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T = Tensor(self.data * other.data,(self, other))
 
@@ -42,7 +41,7 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def __pow__(self, other):
+    def __pow__(self, other) -> 'Tensor':
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T = Tensor(self.data ** other.data, (self, other))
 
@@ -52,9 +51,8 @@ class Tensor():
         output_T._backward = _backward
         return output_T
 
-    def __sub__(self, other):
+    def __sub__(self, other)-> 'Tensor':
         other  = other if isinstance(other , Tensor) else Tensor(other)
-        
         output_T = Tensor(self.data - other.data, (self, other))
 
         def _backward():
@@ -64,22 +62,22 @@ class Tensor():
         output_T._backward = _backward
         return output_T 
 
-    def __radd__(self, other):
+    def __radd__(self, other) -> 'Tensor':
         return self + other
     
-    def __rmul__(self, other):
+    def __rmul__(self, other)-> 'Tensor':
         return self * other 
     
-    def __rsub__(self, other):
+    def __rsub__(self, other)-> 'Tensor':
         return other + (self * -1)
     
-    def __truediv__(self, other):
+    def __truediv__(self, other)-> 'Tensor':
         return self * (other **-1)
     
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other)-> 'Tensor':
         return other * (self**-1)
     #-                                             UNARY                                               -
-    def sum(self):
+    def sum(self) -> 'Tensor':
         output_T = Tensor(self.data.sum(), (self, ))
         
         def _backward():
@@ -88,7 +86,7 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def log(self):
+    def log(self)-> 'Tensor':
         output_T = Tensor(np.log(self.data), (self, ))
 
         def _backward():
@@ -97,7 +95,7 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def mean(self):
+    def mean(self)-> 'Tensor':
         output_T = Tensor(np.mean(self.data), (self, ))
 
         def _backward():
@@ -107,7 +105,7 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def sqrt(self):
+    def sqrt(self)-> 'Tensor':
         output_T = Tensor(np.sqrt(self.data), (self, ))
 
         def _backward():
@@ -116,30 +114,30 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def __neg__(self):
+    def __neg__(self)-> 'Tensor':
         return self * -1 
 
     @classmethod
-    def zeros(cls, shape): return cls(np.zeros(shape))
+    def zeros(cls, shape)-> 'Tensor': return cls(np.zeros(shape))
         
     @classmethod
-    def ones(cls , shape):  return cls(np.ones(shape))
+    def ones(cls, shape)-> 'Tensor': return cls(np.ones(shape))
 
     @classmethod
-    def ones_like(cls,Tensor) : return cls(np.ones(Tensor.shape))
+    def ones_like(cls, Tensor)-> 'Tensor' : return cls(np.ones(Tensor.shape))
        
     @classmethod
-    def zeros_like(cls, Tensor): return cls(np.zeros(Tensor.shape))
+    def zeros_like(cls, Tensor)-> 'Tensor': return cls(np.zeros(Tensor.shape))
 
     RNG = np.random.default_rng() #https://numpy.org/doc/stable/reference/random/generator.html
     @classmethod
-    def randn(cls, shape): return cls(Tensor.RNG.standard_normal(size = shape))
+    def randn(cls, shape)-> 'Tensor': return cls(Tensor.RNG.standard_normal(size = shape))
         
     @classmethod
-    def uniform(cls, shape):   return cls(Tensor.RNG.uniform(low = -1 , high =  1, size = shape))
+    def uniform(cls, shape)-> 'Tensor': return cls(Tensor.RNG.uniform(low = -1 , high =  1, size = shape))
        
     @classmethod
-    def arange(cls, start, stop, step): return cls(np.arange(start = start, stop = stop , step = step ))
+    def arange(cls, start, stop, step)-> 'Tensor': return cls(np.arange(start = start, stop = stop , step = step ))
 
     #-                                           ENGINE                                                  -
     def backward(self):
