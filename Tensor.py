@@ -1,7 +1,6 @@
 import numpy as np
 import math
  
-
 class Tensor():
 
     def __init__(self, data, _children = ()):
@@ -16,87 +15,109 @@ class Tensor():
         return f"<Tensor data = {self.data}>"
     
     def shape(self): return self.shape
-    # -----------------------------------------  binary OPS ----------------------------------------------------
-    def __add__(self, other):   #addition of Tensor by a int(float) or a Tensror of the same size(element wise)
+
+    def size(self): return self.data.size
+    #-                                            BINARY                                                 -
+    def __add__(self, other): 
         
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T  = Tensor(self.data + other.data, (self,other))
 
         def _backward():
-            self.grad += output_T.grad  * 1.0  # chain rule 
-            other.grad += output_T.grad * 1.0
+            self.grad += output_T.grad   # chain rule 
+            other.grad += output_T.grad
 
-        self._backward = _backward
+        output_T._backward = _backward
         return output_T
 
-    def __mul__(self, other): #multiplication of Tensor by a int(float) or a Tensror of the same size(element wise)
+    def __mul__(self, other): 
 
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T = Tensor(self.data * other.data,(self, other))
 
         def _backward():
-            self.grad += (other.data * output_T.grad) 
-            other.grad += (self.data * output_T.grad)
+            self.grad += other * output_T.grad 
+            other.grad += self * output_T.grad
     
-        self._backward = _backward
+        output_T._backward = _backward
         return output_T
     
-    #def __rmul__(self, other):
-    #
-    #    if isinstance(other, (int, float)): return Tensor(self.data * other)
-    #    elif isinstance(other, Tensor) and self.shape == other.shape : return Tensor(self.data * other.data)
-    #    raise TypeError(f"Operation is not suppeorted for {type(other)} and <class 'Tensor'>")
-    #
-    #def __sub__(self, other):
-#
-    #    if isinstance(other, (int, float)): return Tensor(self.data - other)
-    #    elif isinstance(other, Tensor) and self.shape == other.shape : return Tensor(self.data - other.data)
-    #    raise TypeError(f"Operation is not suppeorted for {type(other)} and <class 'Tensor'>")
-    #
-    #def __rsub__(self,other):
-#
-    #    if isinstance(other, (int, float)): return Tensor(other  - self.data)
-    #    elif isinstance(other, Tensor) and self.shape == other.shape : return Tensor(other.data - self.data)
-    #    raise TypeError(f"Operation is not suppeorted for {type(other)} and <class 'Tensor'>")
-    #
-    #def __pow__(self, other):
-#
-    #    if isinstance(other, (int, float)): return Tensor(np.power(self.data, other))
-    #    elif isinstance(other, Tensor) and self.shape == other.shape: return Tensor(np.power(self.data, other.data))
-    #    raise TypeError(f"Operation is not supported for {type(other)} and <class 'Tensor'>")
-    #
-    #def __rpow__(self, other):
-#
-    #    if isinstance(other, (int, float)): return Tensor(np.power(other, self.data))
-    #    elif isinstance(other, Tensor) and self.shape == other.shape: return Tensor(np.power(other.data , self.data))
-    #    raise TypeError(f"Operation is not supported for {type(other)} and <class 'Tensor'>")
-#
-    #def __truediv__(self, other):
-#
-    #    if isinstance(other, (int, float)): return Tensor(self.data * other**-1)
-    #    elif isinstance(other, Tensor) and self.shape == other.shape: return Tensor(self.data * other.data**-1)
-    #    raise TypeError(f"Operation is not supported for {type(other)} and <class 'Tensor'>")
-    #
-    #def __rtruediv__(self,other):
-#
-    #    if isinstance(other, (int, float)): return Tensor(other * self.data**-1)
-    #    elif isinstance(other, Tensor) and self.shape == other.shape: return Tensor(other.data * self.data**-1)
-    #    raise TypeError(f"Operation is not supported for {type(other)} and <class 'Tensor'>")
-    #
-    #def __neg__(self):
-    #    return self * -1.0 
-    ## ----------------------- creation--------------------------------------------------------------------------------
+    def __pow__(self, other):
+        other = other if isinstance(other, Tensor) else Tensor(other)
+        output_T = Tensor(self.data ** other.data, (self, other))
 
-    ### -------------------------- unary  OPS-------------------------------------------------------------------------------
-    def suma(self,axis = None):
-        output = Tensor(self.data.sum(axis = axis))
-        print("USLO")
         def _backward():
-            self.grad = self.data * output.grad
+            self.grad += other * (self ** (other - 1)) * output_T.grad
+        
+        output_T._backward = _backward
+        return output_T
 
-        self._backward = _backward
-        return output 
+    def __sub__(self, other):
+        other  = other if isinstance(other , Tensor) else Tensor(other)
+        
+        output_T = Tensor(self.data - other.data, (self, other))
+
+        def _backward():
+            self.grad += output_T.grad
+            other.grad += -output_T.grad
+
+        output_T._backward = _backward
+        return output_T 
+
+    def __radd__(self, other):
+        return self + other
     
+    def __rmul__(self, other):
+        return self * other 
+    
+    def __rsub__(self, other):
+        return other + (self * -1)
+    
+    def __truediv__(self, other):
+        return self * (other **-1)
+    
+    def __rtruediv__(self, other):
+        return other * (self**-1)
+    #-                                             UNARY                                               -
+    def sum(self):
+        output_T = Tensor(self.data.sum(), (self, ))
+        
+        def _backward():
+            self.grad = Tensor.ones_like(self) * output_T.grad
+
+        output_T._backward = _backward
+        return output_T
+    
+    def log(self):
+        output_T = Tensor(np.log(self.data), (self, ))
+
+        def _backward():
+            self.grad = Tensor.ones_like(self) / self * output_T.grad
+        
+        output_T._backward = _backward
+        return output_T
+    
+    def mean(self):
+        output_T = Tensor(np.mean(self.data), (self, ))
+
+        def _backward():
+            t = Tensor.ones_like(self)  
+            self.grad = t / self.size() * output_T.grad
+
+        output_T._backward = _backward
+        return output_T
+    
+    def sqrt(self):
+        output_T = Tensor(np.sqrt(self.data), (self, ))
+
+        def _backward():
+            self.grad = 1 / (2 * output_T) * output_T.grad
+
+        output_T._backward = _backward
+        return output_T
+    
+    def __neg__(self):
+        return self * -1 
 
     @classmethod
     def zeros(cls, shape): return cls(np.zeros(shape))
@@ -110,7 +131,7 @@ class Tensor():
     @classmethod
     def zeros_like(cls, Tensor): return cls(np.zeros(Tensor.shape))
 
-    RNG = np.random.default_rng() # rng for Tensors with randrom values
+    RNG = np.random.default_rng() #https://numpy.org/doc/stable/reference/random/generator.html
     @classmethod
     def randn(cls, shape): return cls(Tensor.RNG.standard_normal(size = shape))
         
@@ -119,7 +140,8 @@ class Tensor():
        
     @classmethod
     def arange(cls, start, stop, step): return cls(np.arange(start = start, stop = stop , step = step ))
-    
+
+    #-                                           ENGINE                                                  -
     def backward(self):
         
         topo = []
@@ -133,27 +155,7 @@ class Tensor():
                 topo.append(v)
         build_topo(self)
         
-        self.grad = 1
+        self.grad = Tensor([1.0])
 
         for node in reversed(topo):
             node._backward()
-
-
-print("------------")
-
-t = Tensor([[5], [0.2]])
-k = Tensor([[9], [2]])
-y = Tensor([[1.5], [12.]])
-p = k * t 
-h = p + y
-o = h * 0.1
-L = o.suma()
-L.backward()
-
-print(L.grad)
-print(o.grad)
-print(y.grad)
-
-print(p.grad)
-print(t.grad)
-print(k.grad)
