@@ -81,7 +81,7 @@ class Tensor():
         output_T = Tensor(self.data.sum(), (self, ))
         
         def _backward():
-            self.grad = Tensor.ones_like(self) * output_T.grad
+            self.grad += Tensor.ones_like(self) * output_T.grad
 
         output_T._backward = _backward
         return output_T
@@ -90,7 +90,7 @@ class Tensor():
         output_T = Tensor(np.log(self.data), (self, ))
 
         def _backward():
-            self.grad = Tensor.ones_like(self) / self * output_T.grad
+            self.grad += Tensor.ones_like(self) / self * output_T.grad
         
         output_T._backward = _backward
         return output_T
@@ -100,7 +100,7 @@ class Tensor():
 
         def _backward():
             t = Tensor.ones_like(self)  
-            self.grad = t / self.size() * output_T.grad
+            self.grad += t / self.size() * output_T.grad
 
         output_T._backward = _backward
         return output_T
@@ -109,7 +109,7 @@ class Tensor():
         output_T = Tensor(np.sqrt(self.data), (self, ))
 
         def _backward():
-            self.grad = 1 / (2 * output_T) * output_T.grad
+            self.grad += 1 / (2 * output_T) * output_T.grad
 
         output_T._backward = _backward
         return output_T
@@ -117,15 +117,31 @@ class Tensor():
     def __neg__(self)-> 'Tensor':
         return self * -1 
 
-    def abs(self) -> 'Tensor':
-        return Tensor(np.abs(self.data))
-                                                
+    def abs(self) -> 'Tensor':   # fix this 
+        output_T =  Tensor(np.abs(self.data), (self, ))
+        def _backward():
+            self.grad += Tensor(np.sign(self.data)) * output_T.grad
+
+        output_T._backward = _backward
+        return output_T 
+                                           
     def T(self) -> 'Tensor': # Transpose
         return Tensor(np.transpose(self.data))
     
     def unsqueeze(self, axis) -> 'Tensor':
         return Tensor(np.expand_dims(self.data, axis = axis))
     
+    def dot(self, other) -> 'Tensor':
+        other = other if isinstance(other , Tensor) else Tensor(other)
+        output_T  = Tensor(np.dot(self.data, other.data), (self, other))
+
+        def _backward():
+            self.grad += Tensor(output_T.grad.data.dot(other.data.T))
+            other.grad +=  Tensor(self.data.T.dot(output_T.grad.data))
+
+        output_T._backward = _backward
+        return output_T
+
     @classmethod
     def zeros(cls, shape)-> 'Tensor': return cls(np.zeros(shape))
         
