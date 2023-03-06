@@ -5,7 +5,7 @@ class Tensor():
 
     def __init__(self, data, _children = ()):
 
-        self.data = np.array(data, dtype =np.float32)
+        self.data = data if isinstance(data, (np.ndarray, np.generic)) else np.array(data, dtype = np.float32)
         self.shape = self.data.shape
         self._backward = lambda : None
         self.prev = set(_children)
@@ -16,8 +16,7 @@ class Tensor():
     
     def shape(self)-> Tuple[int]: return self.shape
 
-    def size(self)->Tuple[int]: return self.data.size
-
+    def size(self)-> int: return self.data.size
     #-                                            BINARY                                                 -
     def __add__(self, other )-> 'Tensor': 
         other = other if isinstance(other, Tensor) else Tensor(other)
@@ -41,13 +40,14 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def __pow__(self, other) -> 'Tensor':
+    def __pow__(self, other) -> 'Tensor': #https://testbook.com/learn/maths-derivative-of-exponential-function
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T = Tensor(self.data ** other.data, (self, other))
 
         def _backward():
             self.grad += other * (self ** (other - 1)) * output_T.grad
-        
+            other.grad += output_T * self.log() * output_T.grad
+
         output_T._backward = _backward
         return output_T
 
@@ -76,8 +76,8 @@ class Tensor():
     
     def __rtruediv__(self, other)-> 'Tensor':
         return other * (self**-1)
-    #-                                             UNARY                                               -
-    def sum(self) -> 'Tensor':
+    #-                                             UNARY      math                                     -
+    def sum(self) -> 'Tensor': # cant only ret a tensor
         output_T = Tensor(self.data.sum(), (self, ))
         
         def _backward():
@@ -113,10 +113,19 @@ class Tensor():
 
         output_T._backward = _backward
         return output_T
-    
+    #                                            UNARY transformation                                          -
     def __neg__(self)-> 'Tensor':
         return self * -1 
 
+    def abs(self) -> 'Tensor':
+        return Tensor(np.abs(self.data))
+                                                
+    def T(self) -> 'Tensor': # Transpose
+        return Tensor(np.transpose(self.data))
+    
+    def unsqueeze(self, axis) -> 'Tensor':
+        return Tensor(np.expand_dims(self.data, axis = axis))
+    
     @classmethod
     def zeros(cls, shape)-> 'Tensor': return cls(np.zeros(shape))
         
