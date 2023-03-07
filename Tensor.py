@@ -126,13 +126,13 @@ class Tensor():
 
         output_T._backward = _backward
         return output_T 
-                                           
-    def T(self) -> 'Tensor': # Transpose
+    # TODO write T.grad more efficiently               
+    def T(self) -> 'Tensor':
         output_T = Tensor(np.transpose(self.data), (self, ))
 
         def _backward():
             
-            self.grad += Tensor(np.transpose(np.inner(output_T.grad.data, np.ones_like(self.data)))) #cuz calculus
+            self.grad += Tensor(np.transpose(np.inner(output_T.grad.data, np.ones_like(self.data)))) 
 
         output_T._backward  = _backward
         return output_T
@@ -140,6 +140,7 @@ class Tensor():
     def unsqueeze(self, axis) -> 'Tensor':
         return Tensor(np.expand_dims(self.data, axis = axis))
     
+    #                                                DOT                                                     - 
     def dot(self, other) -> 'Tensor':
         other = other if isinstance(other , Tensor) else Tensor(other)
 
@@ -151,7 +152,29 @@ class Tensor():
 
         output_T._backward = _backward
         return output_T
+    
+    #                                               Activation functions                                      - 
+    def ReLU(self):
+        output_T = Tensor(np.maximum(0, self.data), (self, ))
 
+        def _backward():
+            self.grad += Tensor(output_T.data > 0) * output_T.grad
+
+        output_T._backward = _backward
+        return output_T
+    
+    def Sigmoid(self):
+
+        exp = np.exp(-self.data)
+        output_T = Tensor((1/(1 + exp)), (self, )) # der_sig (1/(1 + np.exp(-input))* 1- 1/(1 + np.exp(-input)))
+
+        def _backwrad():
+            self.grad += (output_T.data-output_T.data**2) 
+
+        output_T._backward = _backwrad
+        return output_T
+        
+    
     @classmethod
     def zeros(cls, shape)-> 'Tensor': return cls(np.zeros(shape))
         
