@@ -1,10 +1,12 @@
 import numpy as np
 from typing import Tuple
 
+np.set_printoptions(precision=6)  # this is ugly here
+
 class Tensor():
 
     def __init__(self, data, _children = ()):
-
+        
         self.data = data if isinstance(data, (np.ndarray, np.generic)) else np.array(data, dtype = np.float32)
         self.shape = self.data.shape
         self._backward = lambda : None
@@ -77,7 +79,7 @@ class Tensor():
     def __rtruediv__(self, other)-> 'Tensor':
         return other * (self**-1)
     #-                                             UNARY      math                                     -
-    def sum(self) -> 'Tensor': # cant only ret a tensor
+    def sum(self) -> 'Tensor':
         output_T = Tensor(self.data.sum(), (self, ))
         
         def _backward():
@@ -114,10 +116,10 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     #                                            UNARY transformation                                          -
-    def __neg__(self)-> 'Tensor':
+    def __neg__(self)-> 'Tensor':      # TODO this may couse errors 
         return self * -1 
 
-    def abs(self) -> 'Tensor':   # fix this 
+    def abs(self) -> 'Tensor':   
         output_T =  Tensor(np.abs(self.data), (self, ))
         def _backward():
             self.grad += Tensor(np.sign(self.data)) * output_T.grad
@@ -126,13 +128,21 @@ class Tensor():
         return output_T 
                                            
     def T(self) -> 'Tensor': # Transpose
-        return Tensor(np.transpose(self.data))
+        output_T = Tensor(np.transpose(self.data), (self, ))
+
+        def _backward():
+            
+            self.grad += Tensor(np.transpose(np.inner(output_T.grad.data, np.ones_like(self.data)))) #cuz calculus
+
+        output_T._backward  = _backward
+        return output_T
     
     def unsqueeze(self, axis) -> 'Tensor':
         return Tensor(np.expand_dims(self.data, axis = axis))
     
     def dot(self, other) -> 'Tensor':
         other = other if isinstance(other , Tensor) else Tensor(other)
+
         output_T  = Tensor(np.dot(self.data, other.data), (self, other))
 
         def _backward():
