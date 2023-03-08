@@ -5,17 +5,14 @@ import numpy as np
 import torch
 import unittest
 
-
 x_test = np.random.randn(4,4).astype(np.float32)
 y_test = np.random.randn(4,4).astype(np.float32)
-z_test = np.random.randn(4,4).astype(np.float32)
 i_test = np.random.randn(1,4).astype(np.float32)
 j_test = np.random.randn(1,4).astype(np.float32)
 k_test = np.random.randn(4,1).astype(np.float32)
 
-class Tensor_operations_testing(unittest.TestCase):
-
-
+class test_Passes(unittest.TestCase):
+    
     def test_backward(self):
         def test_mini():
             a = Tensor(x_test)

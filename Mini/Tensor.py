@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 
-np.set_printoptions(precision = 4)  # this is ugly here
+np.set_printoptions(precision = 5)  # this is ugly here
 
 class Tensor():
 

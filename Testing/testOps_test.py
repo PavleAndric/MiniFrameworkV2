@@ -9,10 +9,9 @@ x_test = np.random.randn(4,4).astype(np.float32)
 y_test = np.random.randn(4,4).astype(np.float32)
 z_test = np.random.randn(4,4).astype(np.float32)
 i_test = np.random.randn(1,4).astype(np.float32)
-j_test = np.random.randn(1,4).astype(np.float32)
 k_test = np.random.randn(4,1).astype(np.float32)
 
-class Tensor_operations_testing(unittest.TestCase):
+class test_Tensor_operations(unittest.TestCase):
 
     def test_binary_operations(self):
         def test_mini():
