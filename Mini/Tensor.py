@@ -1,7 +1,7 @@
 import numpy as np
 from typing import Tuple
 
-np.set_printoptions(precision=6)  # this is ugly here
+np.set_printoptions(precision = 4)  # this is ugly here
 
 class Tensor():
 
@@ -132,7 +132,7 @@ class Tensor():
 
         def _backward():
             
-            self.grad += Tensor(np.transpose(np.inner(output_T.grad.data, np.ones_like(self.data)))) 
+            self.grad += Tensor(np.transpose(np.inner(output_T.grad.data, np.ones_like(self.data))))   #TODO find a nicer way to do this
 
         output_T._backward  = _backward
         return output_T
@@ -152,7 +152,6 @@ class Tensor():
 
         output_T._backward = _backward
         return output_T
-    
     #                                               Activation functions                                      - 
     def ReLU(self):
         output_T = Tensor(np.maximum(0, self.data), (self, ))
@@ -169,12 +168,20 @@ class Tensor():
         output_T = Tensor((1/(1 + exp)), (self, )) # der_sig (1/(1 + np.exp(-input))* 1- 1/(1 + np.exp(-input)))
 
         def _backwrad():
-            self.grad += (output_T.data-output_T.data**2) 
+            self.grad += Tensor(output_T.data - output_T.data**2) * output_T.grad 
 
         output_T._backward = _backwrad
         return output_T
-        
     
+    def Tanh(self):
+        output_T = Tensor(np.tanh(self.data), (self, ))
+
+        def _backward():
+            self.grad = Tensor(1- output_T.data**2) * output_T.grad
+        
+        output_T._backward = _backward
+        return output_T
+
     @classmethod
     def zeros(cls, shape)-> 'Tensor': return cls(np.zeros(shape))
         
