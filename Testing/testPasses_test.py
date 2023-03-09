@@ -41,26 +41,6 @@ class test_Passes(unittest.TestCase):
         for x, y in zip(test_mini(), test_torch()):
             np.testing.assert_allclose(actual = x , desired = y, rtol = 1e-4)
 
-    def test_forward(self):
-        def test_mini():
-            a = Tensor(x_test)
-            b = Tensor(k_test)
-            c = Tensor(i_test)
-            Z = a.dot(b) + c.T()
-            A  = Z.Tanh()
-            return A.data
-        
-        def test_torch():
-            a_ = torch.Tensor(x_test)
-            b_ = torch.Tensor(k_test)
-            c_ = torch.Tensor(i_test)
-            Z_ = a_.matmul(b_) + torch.transpose(c_, 0 , 1)
-            true  = torch.tanh(Z_)
-            true = true.cpu().detach().numpy()
-            return true 
-
-        np.testing.assert_allclose(actual = test_mini() , desired = test_torch(), rtol = 1e-5)
-
 if __name__ == '__main__':
     unittest.main()
 

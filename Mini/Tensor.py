@@ -14,9 +14,7 @@ class Tensor():
         self.grad = 0.0
 
     def __repr__(self):
-        return f"<Tensor data = {self.data}>"
-    
-    def shape(self)-> Tuple[int]: return self.shape
+        return f"<Tensor = {self.data}>"
 
     def size(self)-> int: return self.data.size
     #-                                            BINARY                                                 -
@@ -42,7 +40,7 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def __pow__(self, other) -> 'Tensor': #https://testbook.com/learn/maths-derivative-of-exponential-function
+    def __pow__(self, other) -> 'Tensor':                               #https://testbook.com/learn/maths-derivative-of-exponential-function
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T = Tensor(self.data ** other.data, (self, other))
 
@@ -64,24 +62,17 @@ class Tensor():
         output_T._backward = _backward
         return output_T 
 
-    def __radd__(self, other) -> 'Tensor':
-        return self + other
-    
-    def __rmul__(self, other)-> 'Tensor':
-        return self * other 
-    
-    def __rsub__(self, other)-> 'Tensor':
-        return other + (self * -1)
-    
-    def __truediv__(self, other)-> 'Tensor':
-        return self * (other **-1)
-    
-    def __rtruediv__(self, other)-> 'Tensor':
-        return other * (self**-1)
+    def __radd__(self, other) -> 'Tensor': return self + other
+    def __rmul__(self, other)-> 'Tensor': return self * other
+    def __rsub__(self, other)-> 'Tensor': return other + (self * -1)
+    def __truediv__(self, other)-> 'Tensor': return self * (other **-1)
+    def __rtruediv__(self, other)-> 'Tensor': return other * (self**-1)
+    def __neg__(self)-> 'Tensor':  return self * -1                                    # TODO this may couse errors
+
     #-                                             UNARY      math                                     -
     def sum(self) -> 'Tensor':
         output_T = Tensor(self.data.sum(), (self, ))
-        
+  
         def _backward():
             self.grad += Tensor.ones_like(self) * output_T.grad
 
@@ -116,30 +107,28 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     #                                            UNARY transformation                                          -
-    def __neg__(self)-> 'Tensor':      # TODO this may couse errors 
-        return self * -1 
-
+    
     def abs(self) -> 'Tensor':   
         output_T =  Tensor(np.abs(self.data), (self, ))
+
         def _backward():
             self.grad += Tensor(np.sign(self.data)) * output_T.grad
 
         output_T._backward = _backward
         return output_T 
-    # TODO write T.grad more efficiently               
-    def T(self) -> 'Tensor':
+                 
+    def T(self) -> 'Tensor':                                                  
         output_T = Tensor(np.transpose(self.data), (self, ))
 
         def _backward():
-            
-            self.grad += Tensor(np.transpose(np.inner(output_T.grad.data, np.ones_like(self.data))))   #TODO find a nicer way to do this
+            t =  np.inner(output_T.grad.data, np.ones_like(self.data))
+            self.grad += Tensor(np.transpose(t))                                #TODO find a nicer way to do this
 
         output_T._backward  = _backward
         return output_T
     
     def unsqueeze(self, axis) -> 'Tensor':
         return Tensor(np.expand_dims(self.data, axis = axis))
-    
     #                                                DOT                                                     - 
     def dot(self, other) -> 'Tensor':
         other = other if isinstance(other , Tensor) else Tensor(other)
@@ -163,9 +152,8 @@ class Tensor():
         return output_T
     
     def Sigmoid(self):
-
         exp = np.exp(-self.data)
-        output_T = Tensor((1/(1 + exp)), (self, )) # der_sig (1/(1 + np.exp(-input))* 1- 1/(1 + np.exp(-input)))
+        output_T = Tensor((1/(1 + exp)), (self, ))
 
         def _backwrad():
             self.grad += Tensor(output_T.data - output_T.data**2) * output_T.grad 
@@ -181,6 +169,17 @@ class Tensor():
         
         output_T._backward = _backward
         return output_T
+    
+    def Softmax(self):      # https://stackoverflow.com/questions/42599498/numerically-stable-softmax
+
+        z = self.data - max(self.data)
+        o = np.exp(z)
+        softmax = o / np.sum(o)
+
+        output_T = Tensor(softmax)
+        def _backward():
+            self.grad 
+
 
     @classmethod
     def zeros(cls, shape)-> 'Tensor': return cls(np.zeros(shape))
