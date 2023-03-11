@@ -4,8 +4,8 @@ np.set_printoptions(precision = 5)  # this is ugly here
 
 class Tensor():
 
-    def __init__(self, data, _children = ()):
-        
+    def __init__(self, data, _children = () , label = ""):
+        self.label = label
         self.data = data if isinstance(data, (np.ndarray, np.generic)) else np.array(data, dtype = np.float32)
         self.shape = self.data.shape
         self._backward = lambda : None
@@ -39,7 +39,7 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def __pow__(self, other) -> 'Tensor':                               #https://testbook.com/learn/maths-derivative-of-exponential-function
+    def __pow__(self, other) -> 'Tensor':                                       #https://testbook.com/learn/maths-derivative-of-exponential-function
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T = Tensor(self.data ** other.data, (self, other))
 
@@ -60,13 +60,13 @@ class Tensor():
 
         output_T._backward = _backward
         return output_T 
-
+    
     def __radd__(self, other) -> 'Tensor': return self + other
     def __rmul__(self, other)-> 'Tensor': return self * other
     def __rsub__(self, other)-> 'Tensor': return other + (self * -1)
     def __truediv__(self, other)-> 'Tensor': return self * (other **-1)
     def __rtruediv__(self, other)-> 'Tensor': return other * (self**-1)
-    def __neg__(self)-> 'Tensor':  return self * -1                                    # TODO this may couse errors
+    def __neg__(self)-> 'Tensor':  return self * -1    # TODO this may couse errors
 
     #-                                             UNARY      math                                     -
     def sum(self) -> 'Tensor':
@@ -141,7 +141,7 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     #                                               Activation functions                                      - 
-    def ReLU(self):
+    def ReLU(self) -> 'Tensor':
         output_T = Tensor(np.maximum(0, self.data), (self, ))
 
         def _backward():
@@ -150,7 +150,7 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def Sigmoid(self):
+    def Sigmoid(self) -> 'Tensor':
         exp = np.exp(-self.data)
         output_T = Tensor((1/(1 + exp)), (self, ))
 
@@ -160,7 +160,7 @@ class Tensor():
         output_T._backward = _backwrad
         return output_T
     
-    def Tanh(self):
+    def Tanh(self) -> 'Tensor':
         output_T = Tensor(np.tanh(self.data), (self, ))
 
         def _backward():
@@ -169,7 +169,7 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def Softmax(self, axis = None):                             # https://stackoverflow.com/questions/42599498/numerically-stable-softmax https://math.stackexchange.com/questions/2843505/derivative-of-softmax-without-cross-entropy
+    def Softmax(self, axis = None) -> 'Tensor' :                             # https://stackoverflow.com/questions/42599498/numerically-stable-softmax https://math.stackexchange.com/questions/2843505/derivative-of-softmax-without-cross-entropy
 
         z = self.data - np.max(self.data)
         exp = np.exp(z)
@@ -181,16 +181,16 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-
-    def Log_Softmax(self):
-
-        z = np.exp(self.data  - np.max(self.data))
-        softmax_ = z / np.sum(z)
-        output_T = np.log(softmax_)
-
-        def _backward():
-            pass
-            #self.grad  +=  # * output_T.grad
+    # TODO maybe add logsoftmax
+    #def Log_Softmax(self):
+    #
+    #    z = np.exp(self.data  - np.max(self.data))
+    #    softmax_ = z / np.sum(z)
+    #    output_T = np.log(softmax_)
+    #
+    #    def _backward():
+    #        pass
+    #        #self.grad  +=  # * output_T.grad
             
 
     @classmethod
@@ -217,7 +217,8 @@ class Tensor():
 
     #-                                           ENGINE                                                  -
     def backward(self):
-        
+
+        assert self.data.size == 1
         topo = []
         visited = set()
     
