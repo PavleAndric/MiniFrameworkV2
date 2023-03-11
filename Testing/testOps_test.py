@@ -29,7 +29,7 @@ class test_Tensor_operations(unittest.TestCase):
             first_ = a_ + b_
             second_ = 0.23 * first_
             third_ = second_ / 2
-            true_ = third_ - 0.3 ; true  = true_.cpu().detach().numpy()
+            true_ = third_ - 0.3 ; true  = true_.detach().numpy()
             return true
         
         np.testing.assert_allclose(actual = test_mini() , desired = test_torch(), rtol = 1e-5)
@@ -50,7 +50,7 @@ class test_Tensor_operations(unittest.TestCase):
             c_ = torch.Tensor(z_test)
             first_ = a_ * torch.abs(b_).log()
             secodn_ = torch.abs(first_).sqrt() / -torch.mean(c_)
-            true = secodn_.cpu().detach().numpy()
+            true = secodn_.detach().numpy()
             return true.T
         
         np.testing.assert_allclose(actual = test_mini() , desired = test_torch(), rtol = 1e-5)
@@ -68,7 +68,7 @@ class test_Tensor_operations(unittest.TestCase):
             b_ = torch.Tensor(k_test)
             c_ = torch.Tensor(i_test)
             true = a_.matmul(b_) + c_
-            true = true.cpu().detach().numpy()
+            true = true.detach().numpy()
             return true
         
         np.testing.assert_allclose(actual = test_mini() , desired = test_torch(), rtol = 1e-5)

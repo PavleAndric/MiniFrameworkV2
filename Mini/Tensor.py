@@ -169,14 +169,14 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def Softmax(self, axis = None):      # https://stackoverflow.com/questions/42599498/numerically-stable-softmax https://math.stackexchange.com/questions/2843505/derivative-of-softmax-without-cross-entropy
+    def Softmax(self, axis = None):                             # https://stackoverflow.com/questions/42599498/numerically-stable-softmax https://math.stackexchange.com/questions/2843505/derivative-of-softmax-without-cross-entropy
 
         z = self.data - np.max(self.data)
         exp = np.exp(z)
-        output_T = Tensor(exp / np.sum(exp, axis = axis, keepdims = True))
+        output_T = Tensor(exp / np.sum(exp, axis = axis, keepdims = True), (self, ))
 
-        def _backward():
-            self.grad +=  Tensor((np.diagflat(output_T.data) - np.dot(output_T.data, output_T.data.T)))
+        def _backward():                                        #Tensor(np.matmul((np.diagflat(third_.data) - np.dot(third_.data, third_.data.T)), third_.grad.data))
+            self.grad += Tensor(np.matmul((np.diagflat(output_T.data) - np.dot(output_T.data, output_T.data.T)), output_T.grad.data))
 
         output_T._backward = _backward
         return output_T
