@@ -1,5 +1,4 @@
 import numpy as np
-from typing import Tuple
 
 np.set_printoptions(precision = 5)  # this is ugly here
 
@@ -170,16 +169,29 @@ class Tensor():
         output_T._backward = _backward
         return output_T
     
-    def Softmax(self):      # https://stackoverflow.com/questions/42599498/numerically-stable-softmax
+    def Softmax(self, axis = None):      # https://stackoverflow.com/questions/42599498/numerically-stable-softmax https://math.stackexchange.com/questions/2843505/derivative-of-softmax-without-cross-entropy
 
-        z = self.data - max(self.data)
-        o = np.exp(z)
-        softmax = o / np.sum(o)
+        z = self.data - np.max(self.data)
+        exp = np.exp(z)
+        output_T = Tensor(exp / np.sum(exp, axis = axis, keepdims = True))
 
-        output_T = Tensor(softmax)
         def _backward():
-            self.grad 
+            self.grad +=  Tensor((np.diagflat(output_T.data) - np.dot(output_T.data, output_T.data.T)))
 
+        output_T._backward = _backward
+        return output_T
+    
+
+    def Log_Softmax(self):
+
+        z = np.exp(self.data  - np.max(self.data))
+        softmax_ = z / np.sum(z)
+        output_T = np.log(softmax_)
+
+        def _backward():
+            pass
+            #self.grad  +=  # * output_T.grad
+            
 
     @classmethod
     def zeros(cls, shape)-> 'Tensor': return cls(np.zeros(shape))

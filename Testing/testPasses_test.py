@@ -35,7 +35,7 @@ class test_Passes(unittest.TestCase):
             L = torch.sum(second_)
             L.backward()
             
-            grad1, grad2, grad3 ,grad4 = a_.grad.cpu().detach().numpy(), b_.grad.cpu().detach().numpy(), c_.grad.cpu().detach().numpy(), d_.grad.cpu().detach().numpy()
+            grad1, grad2, grad3 ,grad4 = a_.grad.detach().numpy(), b_.grad.detach().numpy(), c_.grad.detach().numpy(), d_.grad.detach().numpy()
             return grad1, grad2, grad3, grad4
             
         for x, y in zip(test_mini(), test_torch()):
