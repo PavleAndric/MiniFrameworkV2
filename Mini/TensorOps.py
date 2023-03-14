@@ -56,6 +56,7 @@ class DOT():
 # ------------------------------UNARY_TRANSFORM-------------------------------#
 class SUM():
     def forward(self): 
+        self.lol = self.data
         return np.sum(self.data)
 
     def backward(self, chain):
@@ -67,7 +68,7 @@ class LOG():
         return np.log(self.data)
     
     def backward(self, chain):
-        self.grad += np.ones_like(self.data) / self.data * chain
+        self.grad += (1 / self.data) * chain
         return self.grad
     
 class MEAN():
@@ -132,13 +133,22 @@ class SIGMOID():
     
 class SOFTMAX():
     def forward(self, axis = None):
-        exp = np.exp(self.data  - np.max(self.data))
+        exp = np.exp(self.data  - np.max(self.data, axis = axis , keepdims = True )) 
         self.output = exp / np.sum(exp, axis = axis, keepdims = True)
         return self.output
     
     def backward(self, chain):
-        self.grad += np.matmul(np.diagflat(self.output) - np.dot(self.output, self.output.T), chain)
-        return self.grad 
+        p = self.output.squeeze() ; ch = chain
+        p = p.reshape(-1,1)
+
+        if ch.shape[0] == 1:
+            ch = ch.T
+
+        self.grad += np.matmul(np.diagflat(p) - np.dot(p, p.T), ch)
+        if self.grad.shape != self.output.shape:
+            self.grad = self.grad.T
+
+        return self.grad
 
        
 

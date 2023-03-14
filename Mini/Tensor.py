@@ -17,10 +17,6 @@ class Tensor():
 
     def size(self)-> int: return self.data.size
 
-    def ensure_Tensor(self):
-        self = self if isinstance(self, Tensor) else Tensor(self)
-        return self                                                             # FIX THIS
-
     def __add__(self, other)-> 'Tensor':
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T = Tensor(TensorOps.ADD.forward(self, other), (self,other))
@@ -213,11 +209,3 @@ class Tensor():
         for node in reversed(topo):
             node._backward()
             node.grad = node.grad  if isinstance(node.grad, Tensor) else Tensor(node.grad)
-
-t1 = Tensor([1,2,3])
-t2 = Tensor([4,4,4])
-T3 = t1 + t2 
-T4 = t1 + T3
-loss = T4.sum()
-loss.backward()
-
