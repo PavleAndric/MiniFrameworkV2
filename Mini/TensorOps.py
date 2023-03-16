@@ -25,11 +25,12 @@ class MUL():
 class POW():
     def forward(self, other):
         self.other = other
-        return np.power(self.data, other.data)
+        self.out = np.power(self.data, other.data)  
+        return self.out 
     
-    def backward(self, chain, input_data):
-        self.grad += self.other * (self **(self.other - 1)) *chain  
-        self.other.grad += np.log(self.data) * chain * input_data.data
+    def backward(self, chain):
+        self.grad += self.other * (np.power(self.data, (self.other.data - 1))) *chain  
+        self.other.grad += np.log(self.data + 1e-8) * chain * self.out
         return self.grad , self.other.grad
     
 class SUB():
@@ -43,32 +44,46 @@ class SUB():
         return self.grad, self.other.grad
     
 class DOT():
-    def forward(self, other):
+    def forward(self, other):                           # Z = 3 x 1 -> first.dot(z) get 3 x 1 back  for z  and 3, for first
         self.other = other
         self.output = np.dot(self.data, self.other.data) 
         return self.output
     
     def backward(self, chain):
-        self.grad += chain.dot(np.transpose(self.other.data))
-        self.other.grad += np.transpose(self.data).dot(chain)
+        if np.ndim(self.data) < 2 :
+            self.data = np.reshape(self.data, (1, self.data.shape[0])) 
+        
+        if np.ndim(chain) < 2:
+            chain = np.reshape(chain, (chain.shape[-1], 1)) ##THIS ONE
+
+        self.grad += chain.dot(np.transpose(self.other.data))  # 1x3 * 3x1
+        self.other.grad += np.transpose(self.data).dot(chain)  # 3x1 1x1 
+
+        self.grad = np.reshape(self.grad, (self.data.shape))
+        self.other.grad = np.reshape(self.other.grad, (self.other.shape))
+
+        assert self.grad.shape == self.data.shape
+        assert self.other.grad.shape == self.other.shape
         return self.grad , self.other.grad    
 
 # ------------------------------UNARY_TRANSFORM-------------------------------#
 class SUM():
     def forward(self): 
         self.lol = self.data
-        return np.sum(self.data)
+        return np.sum(self.data) ####changed 
 
     def backward(self, chain):
+        
         self.grad += np.ones_like(self.data) * chain
         return self.grad
 
 class LOG():
     def forward(self):
-        return np.log(self.data)
+        self.input = self.data + 1e-8
+        return np.log(self.input)
     
     def backward(self, chain):
-        self.grad += (1 / self.data) * chain
+        self.grad += (1 / self.input) * chain
         return self.grad
     
 class MEAN():
@@ -110,7 +125,10 @@ class RELU():
         return self.output
         
     def backward(self, chain):
+             
         self.grad += (self.output > 0) * chain
+        #self.grad = np.reshape(self.grad, (self.output.shape))
+        #assert self.output.shape == self.grad.shape
         return self.grad
 
 class TANH():
@@ -154,4 +172,4 @@ class SOFTMAX():
 
    
 
-            
+			
