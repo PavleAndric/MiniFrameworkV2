@@ -127,8 +127,6 @@ class RELU():
     def backward(self, chain):
              
         self.grad += (self.output > 0) * chain
-        #self.grad = np.reshape(self.grad, (self.output.shape))
-        #assert self.output.shape == self.grad.shape
         return self.grad
 
 class TANH():

@@ -1,5 +1,5 @@
 import numpy as np
-import TensorOps
+import torch
 np.set_printoptions(precision = 5)  # this is ugly here
 
 class Tensor():
@@ -47,11 +47,11 @@ class Tensor():
     
     def __pow__(self, other) -> 'Tensor':                                       #https://testbook.com/learn/maths-derivative-of-exponential-function
         other = other if isinstance(other, Tensor) else Tensor(other)
-        output_T = Tensor(np.power(self.data, other.data), (self, other))
+        output_T = Tensor(np.power(self.data, other.data), (self,))
 
         def _backward():
             self.grad += Tensor(other.data * (np.power(self.data, (other.data - 1))) *output_T.grad.data)
-            other.grad += Tensor(np.log(self.data + 1e-8) * output_T.grad.data * output_T.data)
+            #other.grad += Tensor(np.log(self.data + 1e-8) * output_T.grad.data * output_T.data)
 
         output_T._backward = _backward
         return output_T
@@ -85,10 +85,11 @@ class Tensor():
         return output_T
     
     def log(self)-> 'Tensor':
-        output_T = Tensor(np.log(self.data + 1e-8) (self,))
+        p = self.data
+        output_T = Tensor(np.log(self.data + 1e-8), (self,))
 
         def _backward():
-            self.grad +=  Tensor((1 / output_T.data) * output_T.grad.data)
+            self.grad +=  Tensor((1 / p) * output_T.grad.data)
         
         output_T._backward = _backward
         return output_T
@@ -97,7 +98,7 @@ class Tensor():
         output_T = Tensor(np.mean(self.data), (self,))
 
         def _backward():
-            self.grad += Tensor(np.ones_like(self.data) / self.data.size() * output_T.grad.data)
+            self.grad += Tensor(np.ones_like(self.data) / self.data.size * output_T.grad.data)
 
         output_T._backward = _backward
         return output_T
@@ -114,7 +115,7 @@ class Tensor():
     def abs(self) -> 'Tensor':   
         output_T =  Tensor(np.abs(self.data) , (self,))
         def _backward():
-            self.grad  = Tensor(np.sign(self.data) * output_T.grad.data)
+            self.grad = Tensor(np.sign(self.data) * output_T.grad.data)
 
         output_T._backward = _backward
         return output_T 
@@ -139,16 +140,13 @@ class Tensor():
                 self.data = np.reshape(self.data, (1, self.data.shape[0])) 
         
             if np.ndim(output_T.grad.data) < 2:
-                output_T.grad.data = np.reshape(output_T.grad.data, (output_T.grad.data.shape[-1], 1)) ##THIS ONE
-        
-            self.grad += output_T.grad.data.dot(np.transpose(other.data))  # 1x3 * 3x1
-            other.grad += np.transpose(self.data).dot(output_T.grad.data)  # 3x1 1x1 
-    
+                output_T.grad.data = np.reshape(output_T.grad.data, (output_T.grad.data.shape[-1], 1)) 
+            
+            self.grad += output_T.grad.data.dot(np.transpose(other.data))  
+            other.grad += np.transpose(self.data).dot(output_T.grad.data)  
+            
             self.grad = Tensor(np.reshape(self.grad, (self.data.shape)))
-            other.grad = Tensor(np.reshape(other.grad.data, (other.shape)))
-    
-            assert self.grad.shape == self.data.shape
-            assert other.grad.shape == other.shape  
+            other.grad = Tensor(np.reshape(other.grad.data, (other.shape)))  
 
         output_T._backward = _backward
         return output_T
@@ -166,13 +164,13 @@ class Tensor():
         output_T = Tensor(1/(1 + np.exp(-self.data)), (self, ))
 
         def _backwrad():
-            self.grad +  (output_T.data - output_T.data**2) * output_T.grad.data 
+            self.grad += Tensor((output_T.data - output_T.data**2) * output_T.grad.data)
 
         output_T._backward = _backwrad
         return output_T
     
     def Tanh(self) -> 'Tensor':
-        output_T =Tensor(np.tanh(self.data))
+        output_T =Tensor(np.tanh(self.data), (self,))
 
         def _backward():
             self.grad += Tensor((1- output_T.data**2) * output_T.grad.data)
@@ -181,10 +179,17 @@ class Tensor():
         return output_T
     
     def Softmax(self, axis = None) -> 'Tensor' :                             # https://stackoverflow.com/questions/42599498/numerically-stable-softmax https://math.stackexchange.com/questions/2843505/derivative-of-softmax-without-cross-entropy
-        output_T = Tensor(TensorOps.SOFTMAX.forward(self, axis = axis), (self, ))
+        exp = np.exp(self.data - np.max(self.data, axis = axis , keepdims = True))
+        output_T = Tensor(exp / np.sum(exp , axis = axis, keepdims = True), (self, ))
 
         def _backward():                                       
-            self.grad = TensorOps.SOFTMAX.backward(self, output_T.grad)   # FIX THIS
+            p = output_T.data.squeeze()
+            p = p.reshape(-1, 1) ; ch = output_T.grad.data
+            if ch.shape[0] == 1: ch = ch.T 
+            self.grad += Tensor(np.matmul(np.diagflat(p) -  np.dot(p, p.T), output_T.grad.data))
+            
+            self.grad.data = np.reshape(self.grad.data, output_T.data.shape)
+            assert self.grad.data.shape == output_T.data.shape
 
         output_T._backward = _backward
         return output_T
@@ -205,10 +210,10 @@ class Tensor():
 
     RNG = np.random.default_rng() #https://numpy.org/doc/stable/reference/random/generator.html
     @classmethod
-    def randn(cls, shape)-> 'Tensor': return cls(Tensor.RNG.standard_normal(size = shape))
+    def randn(cls, shape)-> 'Tensor': return cls(Tensor.RNG.standard_normal( size = shape))
         
     @classmethod
-    def uniform(cls, shape)-> 'Tensor': return cls(Tensor.RNG.uniform(low = -1 , high =  1, size = shape))
+    def uniform(cls, shape)-> 'Tensor': return cls(Tensor.RNG.uniform(low = 0 , high =  1, size = shape))
        
     @classmethod
     def arange(cls, start, stop, step)-> 'Tensor': return cls(np.arange(start = start, stop = stop , step = step ))
@@ -231,26 +236,10 @@ class Tensor():
         self.grad = Tensor([1.])
         
         for node in reversed(topo):
-            #print(f"class_grad = {type(node.grad)}, class_node = {type(node)}, label  = {node.label}" )
             node._backward()
-            #node.grad = node.grad  if isinstance(node.grad, Tensor) else Tensor(node.grad)
+            
         self.ALL_PARAMS = [x for x in topo]
-    
-class Optim():
 
-    def __init__(self , parameters, learning_rate):
-        self.params = [x for x in parameters]
-        self.lr = learning_rate
-        
-    def zero_grad(self, ALL_PARAMS):
-        
-        for x in ALL_PARAMS:
-            x.grad = 0.0
-    
-    def step(self):
-    
-        for param in self.params:
-            param.data  = param.data - (self.lr  * param.grad)
-            #print(f"{param.data - (self.lr  * param.grad)}")
-            
-            
+
+
+
