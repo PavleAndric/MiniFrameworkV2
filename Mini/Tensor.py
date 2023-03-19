@@ -89,7 +89,7 @@ class Tensor():
         output_T = Tensor(np.log(self.data + 1e-8), (self,))
 
         def _backward():
-            self.grad +=  Tensor((1 / p) * output_T.grad.data)
+            self.grad +=  Tensor((1 / (p + 1e-8)) * output_T.grad.data)
         
         output_T._backward = _backward
         return output_T
@@ -135,12 +135,10 @@ class Tensor():
         other = other if isinstance(other , Tensor) else Tensor(other)
         output_T  = Tensor(self.data.dot(other.data), (self, other))
         
-        def _backward():
-            if np.ndim(self.data) < 2 :
-                self.data = np.reshape(self.data, (1, self.data.shape[0])) 
-        
-            if np.ndim(output_T.grad.data) < 2:
-                output_T.grad.data = np.reshape(output_T.grad.data, (output_T.grad.data.shape[-1], 1)) 
+        def _backward():   #TODO find a better way of doing this edge case
+
+            if np.ndim(self.data) < 2 : self.data = np.reshape(self.data, (1, self.data.shape[0])) 
+            if np.ndim(output_T.grad.data) < 2: output_T.grad.data = np.reshape(output_T.grad.data, (1, output_T.grad.data.shape[0])) 
             
             self.grad += output_T.grad.data.dot(np.transpose(other.data))  
             other.grad += np.transpose(self.data).dot(output_T.grad.data)  
@@ -156,7 +154,7 @@ class Tensor():
 
         def _backward():
             self.grad += Tensor((output_T.data > 0) * output_T.grad.data)
-
+            
         output_T._backward = _backward
         return output_T
     
@@ -239,7 +237,3 @@ class Tensor():
             node._backward()
             
         self.ALL_PARAMS = [x for x in topo]
-
-
-
-
