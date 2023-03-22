@@ -1,6 +1,4 @@
 import numpy as np
-import torch
-np.set_printoptions(precision = 5)  # this is ugly here
 
 class Tensor():
 
@@ -8,25 +6,21 @@ class Tensor():
         self.ALL_PARAMS = []
         self.label = label
         self.data = data if isinstance(data, (np.ndarray, np.generic)) else np.array(data, dtype = np.float32)
+        self.data = self.data.astype(np.float32)
         self.shape = self.data.shape
         self._backward = lambda : None
         self.prev = set(_children)
         self.grad = 0.0
 
-    def __repr__(self):
-        return f"<Tensor = {self.data}>"
-
+    def __repr__(self): return f"<Tensor = {self.data}>"
     def size(self)-> int: return self.data.size
-
-    def  __getitem__(self, index):
-        return Tensor(self.data[index])
+    def  __getitem__(self, index): return Tensor(self.data[index])
 
     def __add__(self, other)-> 'Tensor':
 
         other = other if isinstance(other, Tensor) else Tensor(other)
         output_T = Tensor(np.add(self.data, other.data), (self, other))
         
-
         def _backward():      
             self.grad  += Tensor(output_T.grad.data)
             other.grad += Tensor(output_T.grad.data)
@@ -51,7 +45,7 @@ class Tensor():
 
         def _backward():
             self.grad += Tensor(other.data * (np.power(self.data, (other.data - 1))) *output_T.grad.data)
-            #other.grad += Tensor(np.log(self.data + 1e-8) * output_T.grad.data * output_T.data)
+            other.grad += Tensor(np.log(self.data + 1e-8) * output_T.grad.data * output_T.data)
 
         output_T._backward = _backward
         return output_T
@@ -72,7 +66,7 @@ class Tensor():
     def __rsub__(self, other)-> 'Tensor': return other + (self * -1)
     def __truediv__(self, other)-> 'Tensor': return self * (other **-1)
     def __rtruediv__(self, other)-> 'Tensor': return other * (self**-1)
-    def __neg__(self)-> 'Tensor':  return self * -1                            # TODO this may couse errors
+    def __neg__(self)-> 'Tensor':  return self * -1                           
 
     #-                                             UNARY      math                                     -
     def sum(self) -> 'Tensor':
@@ -123,7 +117,7 @@ class Tensor():
     def T(self) -> 'Tensor':                                                  
         output_T = Tensor(np.transpose(self.data), (self, ))
         def _backward():
-            self.grad = Tensor(np.transpose(np.inner(output_T.grad.data, np.ones_like(self.data))))                                   #TODO find a nicer way to do this
+            self.grad = Tensor(np.transpose(np.inner(output_T.grad.data, np.ones_like(self.data))))                                   
 
         output_T._backward  = _backward
         return output_T
@@ -154,7 +148,7 @@ class Tensor():
 
         def _backward():
             self.grad += Tensor((output_T.data > 0) * output_T.grad.data)
-            
+
         output_T._backward = _backward
         return output_T
     

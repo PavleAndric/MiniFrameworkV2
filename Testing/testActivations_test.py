@@ -84,6 +84,3 @@ class test_Activations(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
-
-
-# TODO MAKE THIS PRETTY
